@@ -422,6 +422,10 @@ declare module "react-native-firebase" {
        */
       emailVerified: boolean
       /**
+       * - The user's phone number (if available).
+       */
+      phoneNumber: string | null;
+      /**
        *
        */
       isAnonymous: boolean
@@ -450,6 +454,10 @@ declare module "react-native-firebase" {
        * Returns the users authentication token.
        */
       getToken(): Promise<string>
+      /**
+       * Link the user with a 3rd party credential provider.
+       */
+      linkWithCredential(credential: Credential): Promise<User>;
       /**
        * Reauthenticate the current user with credentials:
        */

@@ -110,6 +110,58 @@ RCT_EXPORT_METHOD(createUserWithEmailAndPassword:(NSString *)email pass:(NSStrin
 }
 
 /**
+ verifyPhoneNumber
+ @param NSString phoneNumber
+ @param RCTPromiseResolveBlock resolve
+ @param RCTPromiseRejectBlock reject
+ @return
+ */
+RCT_EXPORT_METHOD(verifyPhoneNumber:(NSString*) phoneNumber resolver:(RCTPromiseResolveBlock) resolve rejecter:(RCTPromiseRejectBlock) reject)
+{
+    [[FIRPhoneAuthProvider provider]
+     verifyPhoneNumber: phoneNumber
+     completion:^(NSString * _Nullable verificationID, NSError * _Nullable error) {
+         
+         if (error) {
+             [self promiseRejectAuthException:reject error:error];
+         } else {
+             resolve(verificationID);
+         }
+         
+     }];
+}
+
+/**
+ signInWithPhone
+ @param NSString provider
+ @param NSString verificationID
+ @param NSString verificationCode
+ @param RCTPromiseResolveBlock resolve
+ @param RCTPromiseRejectBlock reject
+ @return
+ */
+RCT_EXPORT_METHOD(signInWithPhone:(NSString *)verificationID verificationCode:(NSString *)verificationCode resolver:(RCTPromiseResolveBlock) resolve rejecter:(RCTPromiseRejectBlock) reject) {
+    
+    FIRAuthCredential *credential = [[FIRPhoneAuthProvider provider]
+                                     credentialWithVerificationID:verificationID
+                                     verificationCode:verificationCode];
+    
+    if (credential == nil) {
+        return reject(@"auth/invalid-credential", @"The supplied auth credential is malformed, has expired or is not currently supported.", nil);
+    }
+    
+    [[FIRAuth auth] signInWithCredential:credential completion:^(FIRUser *user, NSError *error) {
+        if (error) {
+            [self promiseRejectAuthException:reject error:error];
+        } else {
+            [self promiseWithUser:resolve rejecter:reject user:user];
+        }
+    }];
+}
+
+
+
+/**
  deleteUser
 
  @param RCTPromiseResolveBlock resolve
@@ -579,7 +631,11 @@ RCT_EXPORT_METHOD(fetchProvidersForEmail:(NSString *)email resolver:(RCTPromiseR
         credential = [FIREmailPasswordAuthProvider credentialWithEmail:authToken password:authTokenSecret];
     } else if ([provider compare:@"github" options:NSCaseInsensitiveSearch] == NSOrderedSame) {
         credential = [FIRGitHubAuthProvider credentialWithToken:authToken];
-    } else {
+    } else if ([provider compare:@"phone" options:NSCaseInsensitiveSearch] == NSOrderedSame) {
+        credential = [[FIRPhoneAuthProvider provider]
+                      credentialWithVerificationID:authToken
+                      verificationCode:authTokenSecret];
+    }else {
         NSLog(@"Provider not yet handled: %@", provider);
     }
 
